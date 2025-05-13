@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CAC UtiliTrack - Precision Utility Mapping</title>
+    
+    <!-- External CSS -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/utilities.css">
+    <link rel="stylesheet" href="css/animations.css">
+    
+    <!-- External Libraries -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+
+    <!-- Fallback critical styles - ensure basic layout works even if CSS loads slowly -->
+    <style>
+        /* Critical layout styles */
+        #map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .map-container {
+            flex: 1;
+            position: relative;
+            width: 100%;
+            overflow: hidden;
+        }
+        
+        /* UI controls */
+        .map-controls,
+        .tool-options,
+        .utility-toolbar,
+        .action-buttons,
+        .mode-toggle {
+            position: absolute;
+            z-index: 1000;
+        }
+        
+        /* Important components that must be visible */
+        .leaflet-container {
+            z-index: 1;
+        }
+        
+        .leaflet-control-container {
+            z-index: 1000;
+        }
+        
+        /* User location marker styles - critical for direction indicator */
+        .user-location-marker {
+            z-index: 1000;
+        }
+        
+        .user-location-marker .location-heading {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 12px solid transparent;
+            border-right: 12px solid transparent;
+            border-bottom: 24px solid #2196F3;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            z-index: 1001;
+            opacity: 1;
+        }
+        
+        /* Excavation mode components */
+        .exit-excavation-btn,
+        .exit-excavation-btn.visible {
+            display: flex;
+        }
+        
+        #exit-excavation-modal {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Splash Screen -->
+    <div class="splash-screen" id="splash-screen">
+        <div class="splash-logo">
+            <i class="fas fa-map-marker-alt"></i>
+        </div>
+        <div class="splash-title">CAC UtiliTrack</div>
+        <div class="splash-subtitle">Precision Utility Mapping</div>
+        <div class="splash-progress">
+            <div class="splash-progress-bar"></div>
+        </div>
+    </div>
+
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- App Header -->
+        <header class="app-header" id="app-header">
+            <div class="header-left">
+                <div class="app-logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="logo-text">
+                        <div class="app-title">CAC UtiliTrack</div>
+                        <div class="app-subtitle">Precision Utility Mapping</div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <button class="map-control-button" id="menu-button">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Utility Type Toolbar -->
+            <div class="utility-toolbar" id="utility-toolbar">
+                <button class="utility-button water" data-utility="water">
+                    <i class="fas fa-tint"></i>
+                    <span class="utility-label">Water</span>
+                </button>
+                <button class="utility-button gas" data-utility="gas">
+                    <i class="fas fa-fire"></i>
+                    <span class="utility-label">Gas</span>
+                </button>
+                <button class="utility-button electric" data-utility="electric">
+                    <i class="fas fa-bolt"></i>
+                    <span class="utility-label">Electric</span>
+                </button>
+                <button class="utility-button sewer" data-utility="sewer">
+                    <i class="fas fa-toilet"></i>
+                    <span class="utility-label">Sewer</span>
+                </button>
+                <button class="utility-button telecom" data-utility="telecom">
+                    <i class="fas fa-phone"></i>
+                    <span class="utility-label">Telecom</span>
+                </button>
+            </div>
+            
+            <!-- Map Controls -->
+            <div class="map-controls">
+                <button class="map-control-button" id="zoom-in-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+                <button class="map-control-button" id="zoom-out-btn">
+                    <i class="fas fa-minus"></i>
+                </button>
+                <button class="map-control-button" id="locate-btn">
+                    <i class="fas fa-crosshairs"></i>
+                </button>
+                <button class="map-control-button" id="recenter-btn">
+                    <i class="fas fa-location-arrow"></i>
+                </button>
+            </div>
+            
+            <!-- Tool Options -->
+            <div class="tool-options" id="tool-options">
+                <button class="tool-button" id="layers-btn" title="Layers">
+                    <i class="fas fa-layer-group"></i>
+                </button>
+                <button class="tool-button" id="measure-btn" title="Measure">
+                    <i class="fas fa-ruler"></i>
+                </button>
+            </div>
+            
+            <!-- Action Buttons -->
+            <div class="action-buttons" id="action-buttons">
+                <button class="action-button primary" id="add-utility-btn">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <!-- Mode Toggle -->
+            <div class="mode-toggle" id="mode-toggle">
+                <button class="mode-button active" data-mode="discovery">
+                    <i class="fas fa-search"></i>
+                    <span>Discovery</span>
+                </button>
+                <button class="mode-button" data-mode="mapping">
+                    <i class="fas fa-draw-polygon"></i>
+                    <span>Mapping</span>
+                </button>
+                <button class="mode-button excavation-mode-button" data-mode="excavation">
+                    <i class="fas fa-hard-hat"></i>
+                    <span>Excavation</span>
+                </button>
+            </div>
+            
+            <!-- Status Bar -->
+            <div class="status-bar" id="status-bar">
+                <i class="fas fa-info-circle"></i>
+                <span id="status-text">Ready to track utilities</span>
+            </div>
+            
+            <!-- Measurement Toolbar -->
+            <div class="measurement-toolbar" id="measurement-toolbar">
+                <button class="measurement-button active" data-tool="measure-distance">
+                    <i class="fas fa-ruler-horizontal"></i>
+                </button>
+                <button class="measurement-button" data-tool="add-note">
+                    <i class="fas fa-sticky-note"></i>
+                </button>
+                <button class="measurement-button" data-tool="clear-measurements">
+                    <i class="fas fa-trash"></i>
+                </button>
+                <button class="measurement-button" data-tool="exit-measure">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- High Accuracy Repositioning Panel -->
+            <div class="reposition-control-panel" id="reposition-panel">
+                <div class="reposition-panel-heading">
+                    <i class="fas fa-crosshairs"></i> High Accuracy Repositioning
+                </div>
+                <div class="reposition-instruction" style="text-align: center; font-size: 0.8rem; color: var(--gray-600);">
+                    Drag the blue markers to reposition the utility line
+                </div>
+                <div class="reposition-buttons">
+                    <button class="btn btn-secondary" id="cancel-reposition-btn">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button class="btn btn-primary" id="save-reposition-btn">
+                        <i class="fas fa-check"></i> Save Position
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Utility Info Card -->
+            <div class="utility-info-card" id="utility-info-card">
+                <div class="info-card-header">
+                    <div class="info-card-title">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="info-title">Utility Information</span>
+                    </div>
+                    <button class="info-card-close" id="info-close-btn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="info-card-content">
+                    <div class="info-row">
+                        <div class="info-label">Type:</div>
+                        <div class="info-value" id="info-type">Water</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Line Type:</div>
+                        <div class="info-value" id="info-line-type">Service</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Size:</div>
+                        <div class="info-value" id="info-size">4 inches</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Depth:</div>
+                        <div class="info-value" id="info-depth">3 feet</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Material:</div>
+                        <div class="info-value" id="info-material">PVC</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Condition:</div>
+                        <div class="info-value" id="info-condition">Good</div>
+                    </div>
+                    <div class="info-row">
+                        <div class="info-label">Added:</div>
+                        <div class="info-value" id="info-date">Today at 2:30 PM</div>
+                    </div>
+                    <img id="info-image" class="info-card-image" style="display: none;" />
+                </div>
+                <div class="info-card-actions">
+                    <button class="btn btn-secondary btn-sm" id="edit-utility-btn">
+                        <i class="fas fa-edit"></i> Edit
+                    </button>
+                    <button class="btn btn-primary btn-sm" id="reposition-utility-btn">
+                        <i class="fas fa-crosshairs"></i> Reposition
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Navigation Bar -->
+        <nav class="nav-bar" id="nav-bar">
+            <div class="nav-bar-inner">
+                <button class="nav-button active" data-screen="home">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <span class="nav-label">Map</span>
+                </button>
+                <button class="nav-button" data-screen="utilities">
+                    <i class="fas fa-list"></i>
+                    <span class="nav-label">Utilities</span>
+                </button>
+                <button class="nav-button" data-screen="settings">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-label">Settings</span>
+                </button>
+            </div>
+        </nav>
+    </div>
+    
+    <!-- Notifications Container -->
+    <div class="notification-container" id="notification-container"></div>
+    
+    <!-- Context Menu -->
+    <div class="context-menu" id="context-menu">
+        <div class="context-menu-item" id="edit-item">
+            <i class="fas fa-edit"></i>
+            <span>Edit</span>
+        </div>
+        <div class="context-menu-item" id="connect-item">
+            <i class="fas fa-plug"></i>
+            <span>Connect</span>
+        </div>
+        <div class="context-menu-item" id="measure-item">
+            <i class="fas fa-ruler"></i>
+            <span>Measure</span>
+        </div>
+        <div class="context-menu-item" id="reposition-item">
+            <i class="fas fa-crosshairs"></i>
+            <span>Reposition</span>
+        </div>
+        <div class="context-menu-divider"></div>
+        <div class="context-menu-item danger" id="delete-item">
+            <i class="fas fa-trash"></i>
+            <span>Delete</span>
+        </div>
+    </div>
+    
+    <!-- MODALS -->
+    
+    <!-- Add Utility Modal -->
+    <div class="modal-overlay" id="add-utility-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title">Add Utility</div>
+                <button class="modal-close" id="close-add-utility">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Utility Type</label>
+                    <div class="utility-selection">
+                        <div class="utility-option water selected" data-type="water">
+                            <i class="fas fa-tint utility-option-icon"></i>
+                            <span class="utility-option-label">Water</span>
+                        </div>
+                        <div class="utility-option gas" data-type="gas">
+                            <i class="fas fa-fire utility-option-icon"></i>
+                            <span class="utility-option-label">Gas</span>
+                        </div>
+                        <div class="utility-option electric" data-type="electric">
+                            <i class="fas fa-bolt utility-option-icon"></i>
+                            <span class="utility-option-label">Electric</span>
+                        </div>
+                        <div class="utility-option sewer" data-type="sewer">
+                            <i class="fas fa-toilet utility-option-icon"></i>
+                            <span class="utility-option-label">Sewer</span>
+                        </div>
+                        <div class="utility-option telecom" data-type="telecom">
+                            <i class="fas fa-phone utility-option-icon"></i>
+                            <span class="utility-option-label">Telecom</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Line Type</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="service-type" name="line-type" value="service" checked>
+                            <label for="service-type">Service Line</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="main-type" name="line-type" value="main">
+                            <label for="main-type">Main Line</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="utility-size">Size (inches)</label>
+                    <input type="number" id="utility-size" class="form-control" value="4" min="0.5" step="0.5">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="utility-depth">Depth (feet)</label>
+                    <input type="number" id="utility-depth" class="form-control" value="3" min="0.5" step="0.5">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="utility-material">Material</label>
+                    <select id="utility-material" class="form-control">
+                        <option value="PVC">PVC</option>
+                        <option value="Cast Iron">Cast Iron</option>
+                        <option value="Ductile Iron">Ductile Iron</option>
+                        <option value="Copper">Copper</option>
+                        <option value="HDPE">HDPE</option>
+                        <option value="Steel">Steel</option>
+                        <option value="Clay">Clay</option>
+                        <option value="Concrete">Concrete</option>
+                        <option value="Unknown">Unknown</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="utility-condition">Condition</label>
+                    <select id="utility-condition" class="form-control">
+                        <option value="Excellent">Excellent</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Poor">Poor</option>
+                        <option value="Critical">Critical</option>
+                        <option value="Unknown">Unknown</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="utility-photo">Photo (optional)</label>
+                    <input type="file" id="utility-photo" class="form-control" accept="image/*">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="utility-notes">Notes</label>
+                    <textarea id="utility-notes" class="form-control" rows="2" placeholder="Any additional details..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-add-utility">Cancel</button>
+                <button class="btn btn-primary" id="confirm-add-utility">Add Utility</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Structure Modal -->
+    <div class="modal-overlay" id="add-structure-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title">Add Structure</div>
+                <button class="modal-close" id="close-add-structure">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Structure Type</label>
+                    <div class="structure-selection">
+                        <div class="structure-option" data-structure="valve" data-utility="water">
+                            <i class="fas fa-tint-slash structure-option-icon"></i>
+                            <span class="structure-option-label">Valve</span>
+                        </div>
+                        <div class="structure-option" data-structure="meter" data-utility="water">
+                            <i class="fas fa-tachometer-alt structure-option-icon"></i>
+                            <span class="structure-option-label">Meter</span>
+                        </div>
+                        <div class="structure-option" data-structure="hydrant" data-utility="water">
+                            <i class="fas fa-fire-extinguisher structure-option-icon"></i>
+                            <span class="structure-option-label">Hydrant</span>
+                        </div>
+                        <div class="structure-option" data-structure="regulator" data-utility="gas">
+                            <i class="fas fa-compress-alt structure-option-icon"></i>
+                            <span class="structure-option-label">Regulator</span>
+                        </div>
+                        <div class="structure-option" data-structure="transformer" data-utility="electric">
+                            <i class="fas fa-car-battery structure-option-icon"></i>
+                            <span class="structure-option-label">Transformer</span>
+                        </div>
+                        <div class="structure-option" data-structure="junction" data-utility="electric">
+                            <i class="fas fa-box structure-option-icon"></i>
+                            <span class="structure-option-label">Junction Box</span>
+                        </div>
+                        <div class="structure-option" data-structure="manhole" data-utility="sewer">
+                            <i class="fas fa-circle structure-option-icon"></i>
+                            <span class="structure-option-label">Manhole</span>
+                        </div>
+                        <div class="structure-option" data-structure="catchbasin" data-utility="sewer">
+                            <i class="fas fa-water structure-option-icon"></i>
+                            <span class="structure-option-label">Catch Basin</span>
+                        </div>
+                        <div class="structure-option" data-structure="handhole" data-utility="telecom">
+                            <i class="fas fa-box-open structure-option-icon"></i>
+                            <span class="structure-option-label">Handhole</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="structure-size">Size (inches)</label>
+                    <input type="number" id="structure-size" class="form-control" value="24" min="1">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="structure-depth">Depth/Height (feet)</label>
+                    <input type="number" id="structure-depth" class="form-control" value="3" min="0.5" step="0.5">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="structure-material">Material</label>
+                    <select id="structure-material" class="form-control">
+                        <option value="Concrete">Concrete</option>
+                        <option value="Metal">Metal</option>
+                        <option value="Plastic">Plastic</option>
+                        <option value="Fiberglass">Fiberglass</option>
+                        <option value="Cast Iron">Cast Iron</option>
+                        <option value="Brick">Brick</option>
+                        <option value="Unknown">Unknown</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="structure-condition">Condition</label>
+                    <select id="structure-condition" class="form-control">
+                        <option value="Excellent">Excellent</option>
+                        <option value="Good">Good</option>
+                        <option value="Fair">Fair</option>
+                        <option value="Poor">Poor</option>
+                        <option value="Critical">Critical</option>
+                        <option value="Unknown">Unknown</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="structure-photo">Photo (optional)</label>
+                    <input type="file" id="structure-photo" class="form-control" accept="image/*">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label" for="structure-notes">Notes</label>
+                    <textarea id="structure-notes" class="form-control" rows="2" placeholder="Any additional details..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-add-structure">Cancel</button>
+                <button class="btn btn-primary" id="confirm-add-structure">Add Structure</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Menu Panel -->
+    <div class="panel-overlay" id="main-menu-panel">
+        <div class="panel-container">
+            <div class="panel-handle"></div>
+            <div class="panel-header">
+                <div class="panel-title">Menu</div>
+                <button class="modal-close" id="close-main-menu">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="panel-body">
+                <button class="btn btn-primary btn-block btn-icon" style="margin-bottom: 12px;" id="menu-add-utility">
+                    <i class="fas fa-plus"></i> Add Utility
+                </button>
+                <button class="btn btn-primary btn-block btn-icon" style="margin-bottom: 12px;" id="menu-add-structure">
+                    <i class="fas fa-plus-square"></i> Add Structure
+                </button>
+                <button class="btn btn-secondary btn-block btn-icon" style="margin-bottom: 12px;" id="menu-toggle-layers">
+                    <i class="fas fa-layer-group"></i> Toggle Layers
+                </button>
+                <button class="btn btn-secondary btn-block btn-icon" style="margin-bottom: 12px;" id="menu-export">
+                    <i class="fas fa-file-export"></i> Export Data
+                </button>
+                <button class="btn btn-secondary btn-block btn-icon" id="menu-import">
+                    <i class="fas fa-file-import"></i> Import Data
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Layers Panel -->
+    <div class="panel-overlay" id="layers-panel">
+        <div class="panel-container">
+            <div class="panel-handle"></div>
+            <div class="panel-header">
+                <div class="panel-title">Layers</div>
+                <button class="modal-close" id="close-layers">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="panel-body">
+                <div style="margin-bottom: 20px;">
+                    <div style="font-weight: 500; margin-bottom: 10px;">Utility Types</div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-water" checked>
+                            <label for="layer-water" style="color: #29b6f6;">Water</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-gas" checked>
+                            <label for="layer-gas" style="color: #ffb300;">Gas</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-electric" checked>
+                            <label for="layer-electric" style="color: #ffee58;">Electric</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-sewer" checked>
+                            <label for="layer-sewer" style="color: #8d6e63;">Sewer</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-telecom" checked>
+                            <label for="layer-telecom" style="color: #ab47bc;">Telecom</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <div style="font-weight: 500; margin-bottom: 10px;">Line Types</div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-mains" checked>
+                            <label for="layer-mains">Main Lines</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-services" checked>
+                            <label for="layer-services">Service Lines</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <div style="font-weight: 500; margin-bottom: 10px;">Structures</div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-structures" checked>
+                            <label for="layer-structures">Show Structures</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="layer-labels" checked>
+                            <label for="layer-labels">Show Labels</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Annotation Modal -->
+    <div class="modal-overlay" id="add-annotation-modal">
+        <div class="modal-container small">
+            <div class="modal-header">
+                <div class="modal-title">Add Annotation</div>
+                <button class="modal-close" id="close-add-annotation">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label" for="annotation-text">Annotation Text</label>
+                    <textarea id="annotation-text" class="form-control" rows="3" placeholder="Enter annotation text..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-annotation-btn">Cancel</button>
+                <button class="btn btn-primary" id="confirm-annotation-btn">Add Annotation</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confirm Delete Dialog -->
+    <div class="modal-overlay" id="confirm-delete-modal">
+        <div class="confirm-dialog">
+            <div class="confirm-dialog-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="confirm-dialog-title">Confirm Delete</div>
+            <div class="confirm-dialog-message">Are you sure you want to delete this utility? This action cannot be undone.</div>
+            <div class="confirm-dialog-buttons">
+                <button class="btn btn-secondary" id="cancel-delete">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete">Delete</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Connect Utility Modal -->
+    <div class="modal-overlay" id="connect-utility-modal">
+        <div class="modal-container">
+            <div class="modal-header">
+                <div class="modal-title">Connect Utility</div>
+                <button class="modal-close" id="close-connect">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Connection Type</label>
+                    <select id="connection-type" class="form-control">
+                        <option value="tap">Tap Main Line</option>
+                        <option value="extend">Extend Line</option>
+                        <option value="connect-structure">Connect to Structure</option>
+                    </select>
+                </div>
+                <div class="form-group" id="connection-target-group">
+                    <label class="form-label">Connect To</label>
+                    <select id="connection-target" class="form-control">
+                        <!-- Will be populated dynamically -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Notes</label>
+                    <textarea id="connection-notes" class="form-control" rows="2" placeholder="Any additional details..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="cancel-connect">Cancel</button>
+                <button class="btn btn-primary" id="confirm-connect">Connect</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add confirm drawing button -->
+    <button class="confirm-drawing-btn" id="confirm-drawing-btn">
+        <i class="fas fa-check"></i>
+        <span>Finish Drawing</span>
+    </button>
+    
+    <!-- Add zoom warning message -->
+    <div class="zoom-warning" id="zoom-warning">
+        <i class="fas fa-search-plus"></i>
+        <span>Zoom in closer to see more map details</span>
+    </div>
+
+    <!-- Connection indicator -->
+    <div class="connection-indicator" id="connection-indicator">
+        <div class="connection-indicator-icon" id="connection-indicator-icon">
+            <i class="fas fa-plug"></i>
+        </div>
+        <span id="connection-indicator-text">Connect to Main</span>
+        <button class="btn btn-sm btn-primary" id="confirm-connection-btn">
+            <i class="fas fa-check"></i>
+        </button>
+    </div>
+
+    <!-- Line type selector for mapping mode -->
+    <div class="line-type-selector" id="line-type-selector">
+        <button class="line-type-button active" data-type="service">
+            <i class="fas fa-level-up-alt"></i>
+            <span>Service Line</span>
+        </button>
+        <button class="line-type-button" data-type="main">
+            <i class="fas fa-grip-lines"></i>
+            <span>Main Line</span>
+        </button>
+    </div>
+    
+    <!-- Excavation Mode Indicator -->
+    <div class="excavation-mode-indicator" id="excavation-indicator">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span>EXCAVATION MODE ACTIVE</span>
+    </div>
+
+    <!-- Proximity Alert Container -->
+    <div class="proximity-alert-container" id="proximity-alerts"></div>
+
+    <!-- Exit Excavation Button -->
+    <button class="exit-excavation-btn" id="exit-excavation-btn">
+        <i class="fas fa-times-circle"></i>
+        <span>Exit Excavation Mode</span>
+    </button>
+
+    <!-- Exit Confirmation Dialog -->
+    <div id="exit-excavation-modal">
+        <div class="exit-confirmation">
+            <div class="exit-confirmation-title">
+                <i class="fas fa-exclamation-triangle" style="color: #ff9800;"></i> 
+                <span>Exit Excavation Mode?</span>
+            </div>
+            <div class="exit-confirmation-message">
+                Are you sure you want to exit excavation mode? This will disable real-time proximity alerts.
+            </div>
+            <div class="exit-confirmation-buttons">
+                <button class="btn btn-secondary" id="cancel-exit-excavation">Cancel</button>
+                <button class="btn btn-danger" id="confirm-exit-excavation">Exit Mode</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Debug Panel (hidden by default) -->
+    <div id="debug-panel" style="position: fixed; bottom: 60px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; font-size: 12px; z-index: 9999; max-width: 300px; max-height: 300px; overflow: auto; display: none; border-radius: 4px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <strong>Debug Panel</strong>
+            <button id="close-debug" style="background: none; border: none; color: white; cursor: pointer;">×</button>
+        </div>
+        <div id="debug-content" style="font-family: monospace; font-size: 11px;"></div>
+        <div style="margin-top: 8px; display: flex; gap: 4px; flex-wrap: wrap;">
+            <button class="debug-btn" data-action="test-imports" style="padding: 3px 6px; background: #333; color: white; border: 1px solid #666; border-radius: 3px; font-size: 10px;">Test Imports</button>
+            <button class="debug-btn" data-action="check-elements" style="padding: 3px 6px; background: #333; color: white; border: 1px solid #666; border-radius: 3px; font-size: 10px;">Check Elements</button>
+            <button class="debug-btn" data-action="show-globals" style="padding: 3px 6px; background: #333; color: white; border: 1px solid #666; border-radius: 3px; font-size: 10px;">Show Globals</button>
+            <button class="debug-btn" data-action="reload-app" style="padding: 3px 6px; background: #333; color: white; border: 1px solid #666; border-radius: 3px; font-size: 10px;">Reload App</button>
+            <button class="debug-btn" data-action="fix-connections" style="padding: 3px 6px; background: #333; color: white; border: 1px solid #666; border-radius: 3px; font-size: 10px;">Fix Connections</button>
+        </div>
+    </div>
+
+    <!-- Debug Trigger Button -->
+    <button id="show-debug" style="position: fixed; bottom: 10px; right: 10px; background: red; color: white; padding: 5px 10px; border: none; border-radius: 4px; z-index: 9999; font-size: 12px;">Debug</button>
+
+    <!-- Leaflet JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
+    <!-- Order is important: load scripts in the correct sequence -->
+    <!-- Debug utilities - must be first -->
+    <script src="js/debug.js"></script>
+
+    <!-- Fix script for handling initialization issues -->
+    <script src="js/fix.js"></script>
+
+    <!-- Main App Script (Modular) -->
+    <script type="module" src="js/main.js"></script>
+
+    <!-- Patch script to fix component connections - needs to run after main.js -->
+    <script src="js/patch.js"></script>
+    
+    <!-- Consolidated initialization and fix script -->
+    <script>
+        // Unified application initialization and recovery
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for scripts to load
+            setTimeout(function() {
+                // Run a comprehensive component check
+                ensureApplicationIntegrity();
+            }, 1000);
+        });
+        
+        // Master function to ensure all components are working correctly
+        function ensureApplicationIntegrity() {
+            console.log('Running comprehensive component checks...');
+            
+            // 1. Verify critical components existence
+            const criticalComponents = checkCriticalComponents();
+            
+            // 2. Fix UI components if needed
+            fixUIComponents();
+            
+            // 3. Apply periodic monitoring for key components
+            setupComponentMonitoring();
+            
+            // 4. Report status
+            console.log('Component integrity check complete:', 
+                criticalComponents ? 'All critical components verified' : 'Some components missing, fixes applied');
+        }
+        
+        // Check if critical application components exist
+        function checkCriticalComponents() {
+            const components = {
+                mapController: window.mapController,
+                map: window.mapController?.map,
+                appState: window.appState,
+                uiController: window.uiController,
+                dataStore: window.dataStore
+            };
+            
+            const allComponentsExist = Object.values(components).every(c => !!c);
+            
+            if (!allComponentsExist) {
+                console.warn('Critical components missing:', 
+                    Object.entries(components)
+                        .filter(([_, value]) => !value)
+                        .map(([key]) => key)
+                        .join(', ')
+                );
+                
+                // Try to run fixes if available
+                if (typeof window.patchCACUtiliTrack === 'function') {
+                    window.patchCACUtiliTrack();
+                }
+            }
+            
+            return allComponentsExist;
+        }
+        
+        // Fix UI components that are commonly problematic
+        function fixUIComponents() {
+            // Fix the excavation modal
+            fixExcavationUIComponents();
+            
+            // Fix the location heading
+            fixLocationHeading();
+            
+            // Hide splash screen if still visible
+            const splash = document.getElementById('splash-screen');
+            if (splash && getComputedStyle(splash).display !== 'none') {
+                splash.style.opacity = '0';
+                setTimeout(() => { splash.style.display = 'none'; }, 300);
+            }
+        }
+        
+        // Fix excavation UI components
+        function fixExcavationUIComponents() {
+            // Fix exit button
+            const exitButton = document.getElementById('exit-excavation-btn');
+            if (exitButton) {
+                Object.assign(exitButton.style, {
+                    display: exitButton.classList.contains('visible') ? 'flex' : 'none',
+                    padding: '6px 12px',
+                    fontSize: '0.9rem'
+                });
+            }
+            
+            // Fix exit modal
+            const exitModal = document.getElementById('exit-excavation-modal');
+            if (exitModal) {
+                Object.assign(exitModal.style, {
+                    display: 'none',
+                    position: 'fixed',
+                    top: '0',
+                    left: '0',
+                    right: '0',
+                    bottom: '0',
+                    width: '100%',
+                    height: '100%',
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                    backgroundColor: 'rgba(0,0,0,0.5)',
+                    zIndex: '1001'
+                });
+                
+                // Find confirmation dialog
+                const confirmationEl = exitModal.querySelector('div[style*="background-color: white"]');
+                if (confirmationEl) {
+                    Object.assign(confirmationEl.style, {
+                        maxWidth: '280px',
+                        width: '85%',
+                        backgroundColor: 'white',
+                        borderRadius: '8px',
+                        padding: '16px'
+                    });
+                }
+            }
+        }
+        
+        // Fix location heading
+        function fixLocationHeading() {
+            if (!window.mapController || !window.mapController.userLocationMarker) return;
+            
+            try {
+                const markerEl = window.mapController.userLocationMarker.getElement();
+                if (!markerEl) return;
+                
+                // Ensure with-heading class
+                markerEl.classList.add('with-heading');
+                
+                // Get or create heading element
+                let headingEl = markerEl.querySelector('.location-heading');
+                if (!headingEl) {
+                    headingEl = document.createElement('div');
+                    headingEl.className = 'location-heading';
+                    markerEl.appendChild(headingEl);
+                }
+                
+                // Apply proper styling
+                Object.assign(headingEl.style, {
+                    position: 'absolute',
+                    top: '-24px',
+                    left: '50%',
+                    width: '0',
+                    height: '0',
+                    borderLeft: '12px solid transparent',
+                    borderRight: '12px solid transparent',
+                    borderBottom: '24px solid #2196F3',
+                    transformOrigin: 'bottom center'
+                });
+                
+                // Apply current heading
+                const currentHeading = window.mapController.currentHeading || 0;
+                headingEl.style.transform = `translateX(-50%) rotate(${currentHeading}deg)`;
+                
+                console.log('Location heading fixed');
+            } catch (e) {
+                console.error('Error fixing location heading:', e);
+            }
+        }
+        
+        // Setup monitoring for critical components
+        function setupComponentMonitoring() {
+            // Less aggressive interval - check every 5 seconds
+            setInterval(function() {
+                // Fix location heading if it exists
+                if (window.mapController?.userLocationMarker) {
+                    fixLocationHeading();
+                }
+                
+                // Only fix other components if they're in use (shown)
+                const isExcavationActive = window.appState?.isExcavationMode;
+                if (isExcavationActive) {
+                    fixExcavationUIComponents();
+                }
+            }, 5000);
+        }
+    </script>
+
+    <!-- Simple debug panel functionality -->
+    <script>
+        // Simple debug panel functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const debugPanel = document.getElementById('debug-panel');
+            const debugContent = document.getElementById('debug-content');
+            
+            // Show debug panel button
+            document.getElementById('show-debug').addEventListener('click', function() {
+                debugPanel.style.display = 'block';
+            });
+            
+            // Close debug panel button
+            document.getElementById('close-debug').addEventListener('click', function() {
+                debugPanel.style.display = 'none';
+            });
+            
+            // Debug action buttons
+            document.querySelectorAll('.debug-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const action = this.getAttribute('data-action');
+                    debugContent.innerHTML = '<div>Running: ' + action + '...</div>';
+                    
+                    switch(action) {
+                        case 'test-imports':
+                            // Test imports using the debug utils
+                            if (window.debugCACUtils) {
+                                window.debugCACUtils.checkImports();
+                                setTimeout(() => {
+                                    const logs = getLastConsoleLogs(10);
+                                    debugContent.innerHTML = logs.map(log => `<div>${log}</div>`).join('');
+                                }, 1000);
+                            } else {
+                                debugContent.innerHTML = '<div style="color: yellow;">Debug utils not available</div>';
+                            }
+                            break;
+                            
+                        case 'check-elements':
+                            // Check critical DOM elements
+                            const criticalElements = [
+                                'map', 'splash-screen', 'app-header', 'utility-toolbar', 
+                                'map-controls', 'add-utility-modal', 'add-structure-modal',
+                                'main-menu-panel', 'proximity-alerts'
+                            ];
+                            
+                            let results = '';
+                            criticalElements.forEach(id => {
+                                const el = document.getElementById(id);
+                                results += `<div style="color: ${el ? 'lime' : 'red'}">${id}: ${el ? 'Found' : 'Missing'}</div>`;
+                            });
+                            debugContent.innerHTML = results;
+                            break;
+                            
+                        case 'show-globals':
+                            // Check global objects
+                            const globals = [
+                                'appState', 'dataStore', 'mapController', 
+                                'uiController', 'eventHandlers', 'L'
+                            ];
+                            
+                            let globalResults = '';
+                            globals.forEach(name => {
+                                const exists = window[name] !== undefined;
+                                globalResults += `<div style="color: ${exists ? 'lime' : 'red'}">${name}: ${exists ? 'Available' : 'Missing'}</div>`;
+                            });
+                            debugContent.innerHTML = globalResults;
+                            break;
+                            
+                        case 'reload-app':
+                            // Force reload the application
+                            location.reload();
+                            break;
+                            
+                        case 'fix-connections':
+                            // Manually run the patch function
+                            if (typeof window.patchCACUtiliTrack === 'function') {
+                                const result = window.patchCACUtiliTrack();
+                                debugContent.innerHTML = `<div style="color: lime">Patch applied: ${result}</div>`;
+                            } else {
+                                debugContent.innerHTML = '<div style="color: red">Patch function not available</div>';
+                            }
+                            break;
+                    }
+                });
+            });
+            
+            // Helper to grab recent console logs
+            function getLastConsoleLogs(count) {
+                return ['Console logs not directly accessible in browser.', 'Check browser console (F12) for details.'];
+            }
+        });
+    </script>
+
+    <!-- Automatic map recovery script -->
+    <script>
+        // Automatic map recovery script
+        (function() {
+            // First check if map initializes correctly
+            let mapCheckAttempts = 0;
+            let mapCheckInterval = setInterval(function() {
+                mapCheckAttempts++;
+                console.log(`Checking map initialization (attempt ${mapCheckAttempts}/5)...`);
+                
+                // Check if map is initialized properly
+                if (window.mapController && window.mapController.map) {
+                    console.log('✅ Map initialized properly, no recovery needed');
+                    clearInterval(mapCheckInterval);
+                    return;
+                }
+                
+                // After 5 seconds (5 attempts), try recovery
+                if (mapCheckAttempts >= 5) {
+                    console.warn('⚠️ Map initialization issues detected, running recovery');
+                    clearInterval(mapCheckInterval);
+                    
+                    // Use our debug utils to fix map issues
+                    if (window.debugCACUtils && typeof window.debugCACUtils.fixMapIssues === 'function') {
+                        window.debugCACUtils.fixMapIssues();
+                    } else {
+                        console.error('❌ Debug utilities not available for recovery');
+                        
+                        // Very basic fallback if debug utils aren't available
+                        try {
+                            if (window.L && !window.mapController) {
+                                // Create minimal map just to show something
+                                window.fallbackMap = L.map('map', {
+                                    center: [40.7128, -74.0060], // New York
+                                    zoom: 13
+                                });
+                                
+                                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                                    attribution: '&copy; OpenStreetMap contributors'
+                                }).addTo(window.fallbackMap);
+                                
+                                console.log('Created emergency fallback map');
+                            }
+                        } catch (e) {
+                            console.error('Emergency fallback map creation failed:', e);
+                        }
+                    }
+                }
+            }, 1000); // Check every second
+            
+            // Hide splash screen after 5 seconds regardless of map state
+            setTimeout(function() {
+                const splash = document.getElementById('splash-screen');
+                if (splash && splash.style.display !== 'none') {
+                    console.log('Forcing splash screen to hide after timeout');
+                    splash.style.opacity = '0';
+                    setTimeout(() => {
+                        splash.style.display = 'none';
+                    }, 500);
+                }
+            }, 5000);
+        })();
+    </script>
+
+    <!-- EMERGENCY FIX SCRIPT - DON'T REMOVE -->
+    <script>
+        // Emergency fix for critical mobile issues
+        (function() {
+            console.log('EMERGENCY FIX SCRIPT RUNNING');
+            
+            // Function to fix excavation modal
+            function fixExcavationModal() {
+                const exitModal = document.getElementById('exit-excavation-modal');
+                if (exitModal) {
+                    // Force override any CSS with inline styles
+                    exitModal.style.display = 'none'; 
+                    exitModal.style.position = 'fixed';
+                    exitModal.style.top = '0';
+                    exitModal.style.left = '0';
+                    exitModal.style.right = '0';
+                    exitModal.style.bottom = '0';
+                    exitModal.style.width = '100%';
+                    exitModal.style.height = '100%';
+                    exitModal.style.justifyContent = 'center';
+                    exitModal.style.alignItems = 'center';
+                    exitModal.style.backgroundColor = 'rgba(0,0,0,0.5)';
+                    exitModal.style.zIndex = '9999';
+                    
+                    // Remove any classes that might override these styles
+                    exitModal.className = '';
+                    
+                    // Make sure the confirmation container is properly sized
+                    const confirmationEl = exitModal.querySelector('.exit-confirmation') || 
+                                          exitModal.querySelector('div[style*="background-color: white"]');
+                    if (confirmationEl) {
+                        confirmationEl.style.maxWidth = '280px';
+                        confirmationEl.style.width = '85%';
+                        confirmationEl.style.margin = 'auto';
+                        confirmationEl.style.backgroundColor = 'white';
+                        confirmationEl.style.borderRadius = '8px';
+                        confirmationEl.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                        confirmationEl.style.padding = '16px';
+                    }
+                    
+                    // Update toggle function
+                    const exitButton = document.getElementById('exit-excavation-btn');
+                    if (exitButton) {
+                        // Resize the exit button to make it smaller
+                        exitButton.style.padding = '6px 12px';
+                        exitButton.style.borderRadius = '16px';
+                        exitButton.style.fontSize = '0.9rem';
+                        exitButton.style.backgroundColor = 'white';
+                        exitButton.style.color = '#f44336';
+                        exitButton.style.border = '1px solid #f44336';
+                        
+                        // Fix icon size
+                        const icon = exitButton.querySelector('i');
+                        if (icon) {
+                            icon.style.fontSize = '1rem';
+                        }
+                        
+                        exitButton.onclick = function() {
+                            exitModal.style.display = 'flex';
+                        };
+                    }
+                    
+                    // Update cancel button
+                    const cancelButton = document.getElementById('cancel-exit-excavation');
+                    if (cancelButton) {
+                        cancelButton.onclick = function() {
+                            exitModal.style.display = 'none';
+                        };
+                    }
+                    
+                    // Update confirm button
+                    const confirmButton = document.getElementById('confirm-exit-excavation');
+                    if (confirmButton && window.mapController) {
+                        confirmButton.onclick = function() {
+                            exitModal.style.display = 'none';
+                            if (window.mapController.disableExcavationMode) {
+                                window.mapController.disableExcavationMode();
+                            }
+                        };
+                    }
+                    
+                    console.log('Excavation modal fixed');
+                }
+            }
+            
+            // Function to fix heading indicator
+            function fixHeadingIndicator() {
+                try {
+                    if (window.mapController && window.mapController.userLocationMarker) {
+                        const markerEl = window.mapController.userLocationMarker.getElement();
+                        if (markerEl) {
+                            // Add with-heading class to enable the heading indicator
+                            markerEl.classList.add('with-heading');
+                            
+                            // Force add heading indicator
+                            let headingEl = markerEl.querySelector('.location-heading');
+                            if (!headingEl) {
+                                headingEl = document.createElement('div');
+                                headingEl.className = 'location-heading';
+                                markerEl.appendChild(headingEl);
+                            }
+                            
+                            // Force style the heading element
+                            headingEl.style.position = 'absolute';
+                            headingEl.style.top = '-24px';
+                            headingEl.style.left = '50%';
+                            headingEl.style.width = '0';
+                            headingEl.style.height = '0';
+                            headingEl.style.borderLeft = '12px solid transparent';
+                            headingEl.style.borderRight = '12px solid transparent';
+                            headingEl.style.borderBottom = '24px solid #2196F3';
+                            headingEl.style.transformOrigin = 'bottom center';
+                            headingEl.style.zIndex = '1001';
+                            headingEl.style.display = 'block';
+                            headingEl.style.visibility = 'visible';
+                            headingEl.style.opacity = '1';
+                            
+                            // Apply the current heading or a default of 0 degrees
+                            const currentHeading = window.mapController.currentHeading || 0;
+                            headingEl.style.transform = `translateX(-50%) rotate(${currentHeading}deg)`;
+                            
+                            console.log('Applied emergency heading fix');
+                            
+                            // Force heading update through the MapController
+                            if (window.mapController.updateHeading) {
+                                // Use a test heading if no current heading to verify indicator works
+                                window.mapController.updateHeading(window.mapController.currentHeading || 45);
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error in heading fix:', e);
+                }
+            }
+            
+            // Wait for page to load completely then apply fixes
+            window.addEventListener('load', function() {
+                // Run immediately
+                fixExcavationModal();
+                setTimeout(fixHeadingIndicator, 100);
+                
+                // Run again after 1 second
+                setTimeout(fixExcavationModal, 1000);
+                setTimeout(fixHeadingIndicator, 1100);
+                
+                // Run again after 3 seconds
+                setTimeout(fixExcavationModal, 3000);
+                setTimeout(fixHeadingIndicator, 3100);
+                
+                // Setup periodic check every 5 seconds
+                setInterval(function() {
+                    fixExcavationModal();
+                    fixHeadingIndicator();
+                }, 5000);
+                
+                console.log('Emergency fixes applied and monitoring started');
+            });
+        })();
+    </script>
+</body>
+</html> 
