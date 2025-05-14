@@ -1,0 +1,579 @@
+/*********************************
+* GLOBAL STYLES & CORE LAYOUT
+*********************************/
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    touch-action: pan-x pan-y; /* Prevent double-tap zoom on UI elements */
+    scroll-behavior: smooth;
+}
+
+button, 
+input, 
+select, 
+textarea {
+    font-family: inherit;
+}
+
+button {
+    cursor: pointer;
+    border: none;
+    background: none;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* iOS Safe Area Support */
+@supports(padding: env(safe-area-inset-bottom)) {
+    body {
+        padding-bottom: env(safe-area-inset-bottom);
+    }
+}
+
+/*********************************
+* APP CONTAINER & LAYOUT
+*********************************/
+.app-container {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    height: 100dvh; /* Dynamic viewport height for mobile */
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--bg-main);
+}
+
+/* Map Container */
+.map-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    z-index: var(--z-normal);
+    touch-action: manipulation;
+}
+
+#map {
+    width: 100%;
+    height: 100%;
+    z-index: var(--z-normal);
+    touch-action: manipulation;
+}
+
+/*********************************
+* HEADER
+*********************************/
+.app-header {
+    position: relative;
+    padding: var(--space-sm) var(--space-md);
+    background-color: var(--primary);
+    color: white;
+    box-shadow: var(--shadow-md);
+    z-index: var(--z-fixed);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: height var(--transition-normal);
+}
+
+.app-header.minimal {
+    height: 40px;
+}
+
+.header-left, 
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.app-logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-weight: 700;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.logo-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-md);
+    background-color: white;
+    color: var(--primary);
+    font-size: 1rem;
+    box-shadow: var(--shadow-sm);
+    transform-origin: center;
+    transition: transform var(--transition-normal);
+}
+
+.logo-icon:hover {
+    transform: scale(1.05);
+}
+
+.logo-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1;
+}
+
+.app-title {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.app-subtitle {
+    font-size: 10px;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+/*********************************
+* NAVIGATION BAR
+*********************************/
+.nav-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    padding: var(--space-sm);
+    background-color: var(--bg-card);
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-fixed);
+    transform: translateY(0);
+    transition: transform var(--transition-normal);
+    touch-action: none; /* Prevent dragging UI elements */
+}
+
+.nav-bar.hidden {
+    transform: translateY(100%);
+}
+
+.nav-bar-inner {
+    display: flex;
+    gap: var(--space-md);
+    padding: var(--space-xs) var(--space-sm);
+    background-color: var(--bg-card);
+    border-radius: var(--radius-full);
+    box-shadow: var(--shadow-sm);
+}
+
+.nav-button {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-sm);
+    color: var(--gray-600);
+    border-radius: var(--radius-full);
+    transition: background-color var(--transition-fast),
+                color var(--transition-fast);
+    gap: 2px;
+}
+
+.nav-button:active {
+    transform: scale(0.95);
+}
+
+.nav-button.active {
+    background-color: var(--primary-light);
+    color: white;
+}
+
+.nav-button i {
+    font-size: 1.25rem;
+}
+
+.nav-label {
+    font-size: 0.65rem;
+    font-weight: 500;
+}
+
+/* Disable touch dragging on UI elements */
+button, 
+.utility-toolbar,
+.tool-options,
+.map-controls,
+.action-buttons,
+.mode-toggle,
+.nav-bar,
+.status-bar,
+.measurement-toolbar,
+.modal-container,
+.panel-container,
+.utility-info-card,
+.context-menu,
+.line-type-selector,
+.confirm-drawing-btn,
+.connection-indicator,
+.annotation-marker,
+.modal-header,
+.modal-footer,
+.modal-title,
+.panel-header,
+.form-control,
+.btn {
+    touch-action: none !important;
+    -webkit-touch-action: none !important;
+    -ms-touch-action: none !important;
+    pointer-events: auto;
+}
+
+/* Allow map panning */
+.map-container, #map {
+    touch-action: manipulation !important;
+    -webkit-touch-action: manipulation !important;
+    -ms-touch-action: manipulation !important;
+}
+
+/* Ensure html and body don't enable unwanted touch behaviors */
+html, body {
+    touch-action: pan-x pan-y !important;
+    -webkit-touch-action: pan-x pan-y !important;
+    -ms-touch-action: pan-x pan-y !important;
+}
+
+/*********************************
+* RESPONSIVE ADJUSTMENTS
+*********************************/
+@media (max-width: 480px) {
+    /* Make buttons slightly smaller on very small screens */
+    .action-button,
+    .tool-button,
+    .map-control-button {
+        width: 44px;
+        height: 44px;
+        font-size: 1.25rem;
+    }
+    
+    .utility-button {
+        padding: var(--space-xs) var(--space-sm);
+        min-width: 50px;
+    }
+    
+    .utility-button i {
+        font-size: 1.125rem;
+    }
+    
+    .utility-label,
+    .nav-label {
+        font-size: 0.625rem;
+    }
+    
+    /* Adjust modal sizes */
+    .modal-container,
+    .panel-container {
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    /* Adjust form controls for touch */
+    .form-control {
+        padding: var(--space-sm) var(--space-md);
+    }
+    
+    /* Make utility options more compact */
+    .utility-option,
+    .structure-option {
+        padding: var(--space-xs);
+    }
+    
+    .utility-toolbar {
+        top: calc(var(--space-lg) + 40px);
+    }
+    
+    .map-controls {
+        top: calc(var(--space-lg) + 40px);
+    }
+    
+    .tool-options {
+        top: calc(var(--space-lg) + 40px);
+    }
+}
+
+@media (min-width: 768px) {
+    /* Slightly larger elements on tablets and up */
+    .app-header {
+        padding: var(--space-md) var(--space-lg);
+    }
+    
+    .app-title {
+        font-size: 18px;
+    }
+    
+    .app-subtitle {
+        font-size: 12px;
+    }
+    
+    .modal-container {
+        max-width: 480px;
+    }
+    
+    .panel-container {
+        max-width: 600px;
+    }
+    
+    /* More prominent buttons */
+    .action-button {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+    
+    .utility-toolbar {
+        top: calc(var(--space-lg) + 60px);
+    }
+    
+    .map-controls {
+        top: calc(var(--space-lg) + 60px);
+    }
+    
+    .tool-options {
+        top: calc(var(--space-lg) + 60px);
+    }
+}
+
+/* Enhanced user location marker styles */
+.user-location-marker {
+    z-index: 1000 !important;
+}
+
+.user-location-marker .location-marker-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.user-location-marker .location-accuracy-circle {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: rgba(33, 150, 243, 0.15);
+    transform: scale(1);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+}
+
+/* Enhanced, more visible heading indicator */
+.user-location-marker .location-heading {
+    position: absolute;
+    top: -20px; /* Positioned higher above marker */
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-left: 12px solid transparent; /* Wider arrow */
+    border-right: 12px solid transparent; /* Wider arrow */
+    border-bottom: 24px solid #2196F3; /* Longer arrow */
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(0deg);
+    transition: transform 0.5s ease;
+    opacity: 0.9;
+    z-index: 1001; /* Ensure it appears above the marker */
+    filter: drop-shadow(0 0 2px rgba(0,0,0,0.5)); /* Add shadow for better visibility */
+}
+
+.user-location-marker.with-heading .location-heading {
+    opacity: 1;
+}
+
+.user-location-marker .location-pulse {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: rgba(33, 150, 243, 0.2);
+    animation: pulse 2s infinite;
+}
+
+.user-location-marker .location-pulse-inner {
+    position: absolute;
+    top: 25%;
+    left: 25%;
+    width: 50%;
+    height: 50%;
+    border-radius: 50%;
+    background-color: rgba(33, 150, 243, 0.3);
+    animation: pulse 2s infinite 0.3s;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(0.95);
+        opacity: 1;
+    }
+    70% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+    100% {
+        transform: scale(0.95);
+        opacity: 0;
+    }
+}
+
+/* Add critical proximity alert styles */
+.proximity-warning {
+    stroke: #FFC107 !important;
+    stroke-opacity: 0.8 !important;
+    stroke-width: 5 !important;
+}
+
+.proximity-caution {
+    stroke: #FF9800 !important;
+    stroke-opacity: 0.9 !important;
+    stroke-width: 6 !important;
+}
+
+.proximity-danger {
+    stroke: #FF5722 !important;
+    stroke-opacity: 1 !important;
+    stroke-width: 7 !important;
+}
+
+.proximity-critical {
+    stroke: #F44336 !important;
+    stroke-opacity: 1 !important;
+    stroke-width: 8 !important;
+}
+
+/* Modal Overlay Base Styles - IMPORTANT FIX */
+.modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    display: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    z-index: 9999 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.modal-overlay.visible {
+    display: flex !important;
+}
+
+/* Override for the exit excavation modal specifically */
+#exit-excavation-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    max-width: 100% !important;
+    max-height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.5) !important;
+    z-index: 9999 !important;
+    display: none !important;
+    justify-content: center !important;
+    align-items: center !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+}
+
+#exit-excavation-modal.visible {
+    display: flex !important;
+}
+
+/* Reset any problematic styles for the exit confirmation container */
+#exit-excavation-modal .exit-confirmation {
+    max-width: 290px !important;
+    width: 85% !important;
+    margin: auto !important;
+    background-color: white !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    padding: 16px !important;
+    position: relative !important;
+    z-index: 10001 !important;
+    height: auto !important;
+    transform: none !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+}
+
+.exit-confirmation-title {
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    margin-bottom: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+    color: #333 !important;
+}
+
+.exit-confirmation-message {
+    font-size: 14px !important;
+    margin-bottom: 20px !important;
+    color: #666 !important;
+    line-height: 1.4 !important;
+}
+
+.exit-confirmation-buttons {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+}
+
+@keyframes pulse-danger {
+    0% {
+        stroke-opacity: 1;
+    }
+    50% {
+        stroke-opacity: 0.5;
+    }
+    100% {
+        stroke-opacity: 1;
+    }
+}
+
+@keyframes pulse-critical {
+    0% {
+        stroke-opacity: 1;
+        stroke-width: 8px;
+    }
+    50% {
+        stroke-opacity: 0.7;
+        stroke-width: 10px;
+    }
+    100% {
+        stroke-opacity: 1;
+        stroke-width: 8px;
+    }
+} 
