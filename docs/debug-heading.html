@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heading Debug Test</title>
+    <link rel="stylesheet" href="css/location-marker.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        .test-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .marker-test {
+            width: 40px;
+            height: 40px;
+            position: relative;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        input[type="range"] {
+            width: 200px;
+        }
+        .debug-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .debug-info h3 {
+            margin-top: 0;
+        }
+        .test-marker {
+            position: relative;
+            width: 40px;
+            height: 40px;
+        }
+    </style>
+</head>
+<body>
+    <h1>User Location Marker Heading Debug</h1>
+    
+    <div class="test-container">
+        <div class="marker-test">
+            <div class="user-location-marker with-heading medium-accuracy" style="width: 40px; height: 40px;">
+                <div class="location-accuracy-circle"></div>
+                <div class="location-pulse"></div>
+                <div class="location-pulse-inner"></div>
+                <div class="location-center"></div>
+                <div class="location-heading" style="position:absolute; width:0; height:0; left:50%; top:-10px; border-left:8px solid transparent; border-right:8px solid transparent; border-bottom:16px solid #2196F3; transform-origin:50% 100%; transform:translateX(-50%) rotate(0deg); opacity:1; z-index:100;"></div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <label for="headingSlider">Heading:</label>
+            <input type="range" id="headingSlider" min="0" max="360" value="0" step="1">
+            <span id="headingValue">0°</span>
+            <button id="testOrientationBtn">Test Device Orientation</button>
+        </div>
+    </div>
+    
+    <div class="debug-info">
+        <h3>Debug Information</h3>
+        <div id="debugOutput">
+            <p>Use the slider above to test the heading indicator rotation.</p>
+            <p>Click "Test Device Orientation" to test compass/orientation APIs.</p>
+        </div>
+    </div>
+
+    <script>
+        const headingSlider = document.getElementById('headingSlider');
+        const headingValue = document.getElementById('headingValue');
+        const headingElement = document.querySelector('.location-heading');
+        const debugOutput = document.getElementById('debugOutput');
+        const testOrientationBtn = document.getElementById('testOrientationBtn');
+        
+        let orientationActive = false;
+        
+        // Manual heading test
+        headingSlider.addEventListener('input', function() {
+            const heading = parseInt(this.value);
+            headingValue.textContent = heading + '°';
+            
+            if (headingElement) {
+                const transform = `translateX(-50%) rotate(${heading}deg)`;
+                headingElement.style.transform = transform;
+                
+                debugOutput.innerHTML = `
+                    <p><strong>Manual Test</strong></p>
+                    <p>Heading: ${heading}°</p>
+                    <p>Transform: ${transform}</p>
+                    <p>Element found: ${headingElement ? 'Yes' : 'No'}</p>
+                `;
+            }
+        });
+        
+        // Device orientation test
+        testOrientationBtn.addEventListener('click', function() {
+            if (!orientationActive) {
+                startOrientationTest();
+            } else {
+                stopOrientationTest();
+            }
+        });
+        
+        function startOrientationTest() {
+            orientationActive = true;
+            testOrientationBtn.textContent = 'Stop Orientation Test';
+            
+            debugOutput.innerHTML += '<p><strong>Starting orientation test...</strong></p>';
+            
+            if (window.DeviceOrientationEvent) {
+                // For iOS 13+ we need to request permission
+                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                    DeviceOrientationEvent.requestPermission()
+                        .then(permissionState => {
+                            if (permissionState === 'granted') {
+                                window.addEventListener('deviceorientation', handleOrientation);
+                                debugOutput.innerHTML += '<p>✅ iOS permission granted</p>';
+                            } else {
+                                debugOutput.innerHTML += '<p>❌ iOS permission denied</p>';
+                            }
+                        })
+                        .catch(console.error);
+                } else {
+                    // For non-iOS devices
+                    window.addEventListener('deviceorientation', handleOrientation);
+                    debugOutput.innerHTML += '<p>✅ Orientation listener added (non-iOS)</p>';
+                }
+            } else {
+                debugOutput.innerHTML += '<p>❌ DeviceOrientationEvent not supported</p>';
+            }
+        }
+        
+        function stopOrientationTest() {
+            orientationActive = false;
+            testOrientationBtn.textContent = 'Test Device Orientation';
+            window.removeEventListener('deviceorientation', handleOrientation);
+            debugOutput.innerHTML += '<p><strong>Orientation test stopped</strong></p>';
+        }
+        
+        function handleOrientation(event) {
+            let heading = 0;
+            let source = '';
+            
+            if (event.webkitCompassHeading !== undefined && event.webkitCompassHeading !== null) {
+                heading = event.webkitCompassHeading;
+                source = 'iOS webkitCompassHeading';
+            } else if (event.alpha !== null && event.alpha !== undefined) {
+                if (event.absolute === true) {
+                    heading = event.alpha;
+                    source = 'Android absolute alpha';
+                } else {
+                    heading = (360 - event.alpha + 360) % 360;
+                    source = 'Android alpha (corrected)';
+                }
+            }
+            
+            // Update the marker
+            if (headingElement) {
+                const transform = `translateX(-50%) rotate(${heading}deg)`;
+                headingElement.style.transform = transform;
+            }
+            
+            // Update controls
+            headingSlider.value = heading;
+            headingValue.textContent = Math.round(heading) + '°';
+            
+            debugOutput.innerHTML = `
+                <p><strong>Device Orientation Data</strong></p>
+                <p>Calculated Heading: ${Math.round(heading)}°</p>
+                <p>Source: ${source}</p>
+                <p>Raw Alpha: ${event.alpha}</p>
+                <p>Raw Beta: ${event.beta}</p>
+                <p>Raw Gamma: ${event.gamma}</p>
+                <p>Absolute: ${event.absolute}</p>
+                <p>iOS Compass: ${event.webkitCompassHeading}</p>
+                <p>Transform Applied: translateX(-50%) rotate(${Math.round(heading)}deg)</p>
+            `;
+        }
+    </script>
+</body>
+</html> 

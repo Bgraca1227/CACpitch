@@ -1,0 +1,482 @@
+/*********************************
+* MAP UTILITIES & MARKERS
+*********************************/
+/* Map Indicators */
+.tap-indicator {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    margin-left: -20px;
+    margin-top: -20px;
+    border-radius: 50%;
+    border: 2px solid white;
+    background-color: rgba(41, 98, 255, 0.2);
+    box-shadow: 0 0 0 4px rgba(41, 98, 255, 0.3);
+    animation: pulse 2s infinite;
+    pointer-events: none;
+    z-index: var(--z-normal);
+}
+
+/* Utility Markers */
+.utility-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background-color: white;
+    color: var(--primary);
+    border: 2px solid currentColor;
+    box-shadow: var(--shadow-md);
+    font-size: 0.8rem;
+    position: relative;
+}
+
+.utility-marker::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: white transparent transparent transparent;
+}
+
+.utility-marker.water {
+    color: #29b6f6;
+}
+
+.utility-marker.gas {
+    color: #ffb300;
+}
+
+.utility-marker.electric {
+    color: #ffee58;
+}
+
+.utility-marker.sewer {
+    color: #8d6e63;
+}
+
+.utility-marker.telecom {
+    color: #ab47bc;
+}
+
+.utility-marker.main::before {
+    content: "M";
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    background-color: var(--primary-dark);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.7rem;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.utility-marker.main.water::before {
+    background-color: #29b6f6;
+}
+
+.utility-marker.main.gas::before {
+    background-color: #ffb300;
+}
+
+.utility-marker.main.electric::before {
+    background-color: #ffee58;
+    color: black;
+}
+
+.utility-marker.main.sewer::before {
+    background-color: #8d6e63;
+}
+
+.utility-marker.main.telecom::before {
+    background-color: #ab47bc;
+}
+
+/* Structure Icons */
+.structure-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background-color: white;
+    color: var(--primary);
+    border: 2px solid currentColor;
+    box-shadow: var(--shadow-md);
+    font-size: 1.25rem;
+}
+
+.structure-marker.water {
+    color: #29b6f6;
+}
+
+.structure-marker.gas {
+    color: #ffb300;
+}
+
+.structure-marker.electric {
+    color: #ffee58;
+}
+
+.structure-marker.sewer {
+    color: #8d6e63;
+}
+
+.structure-marker.telecom {
+    color: #ab47bc;
+}
+
+/* Utility Lines */
+.utility-line {
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+}
+
+.utility-line.main {
+    stroke-width: 6;
+}
+
+.utility-line.service {
+    stroke-width: 4;
+    stroke-dasharray: 8, 8;
+}
+
+.utility-line.water {
+    stroke: #29b6f6;
+}
+
+.utility-line.gas {
+    stroke: #ffb300;
+}
+
+.utility-line.electric {
+    stroke: #ffee58;
+}
+
+.utility-line.sewer {
+    stroke: #8d6e63;
+}
+
+.utility-line.telecom {
+    stroke: #ab47bc;
+}
+
+/* Utility Line Drawing */
+.utility-line-drawing {
+    animation: drawing-pulse 2s infinite;
+    stroke-width: 6px !important;
+}
+
+.utility-line-drawing.water {
+    filter: drop-shadow(0 0 3px #29b6f6);
+}
+
+.utility-line-drawing.gas {
+    filter: drop-shadow(0 0 3px #ffb300);
+}
+
+.utility-line-drawing.electric {
+    filter: drop-shadow(0 0 3px #ffee58);
+}
+
+.utility-line-drawing.sewer {
+    filter: drop-shadow(0 0 3px #8d6e63);
+}
+
+.utility-line-drawing.telecom {
+    filter: drop-shadow(0 0 3px #ab47bc);
+}
+
+/* Proximity Warning Styles */
+.utility-line.proximity-warning {
+    stroke-width: 8px;
+    stroke: var(--warning);
+    stroke-opacity: 0.7;
+    animation: pulse-line 2s infinite;
+}
+
+.utility-line.proximity-caution {
+    stroke-width: 9px;
+    stroke: #ff9800;
+    stroke-opacity: 0.8;
+    animation: pulse-line 1.5s infinite;
+}
+
+.utility-line.proximity-danger {
+    stroke-width: 10px;
+    stroke: var(--danger);
+    stroke-opacity: 0.9;
+    animation: pulse-line 1s infinite;
+}
+
+.utility-line.proximity-critical {
+    stroke-width: 12px;
+    stroke: var(--danger);
+    stroke-opacity: 1;
+    animation: pulse-line 0.5s infinite;
+}
+
+/* Connector Points */
+.connector-point {
+    fill: white;
+    stroke-width: 2px;
+}
+
+.connector-point.water {
+    stroke: #29b6f6;
+}
+
+.connector-point.gas {
+    stroke: #ffb300;
+}
+
+.connector-point.electric {
+    stroke: #ffee58;
+}
+
+.connector-point.sewer {
+    stroke: #8d6e63;
+}
+
+.connector-point.telecom {
+    stroke: #ab47bc;
+}
+
+/* Connection Point Indicator */
+.connection-point-indicator {
+    animation: pulse-connection 1.5s ease-in-out infinite;
+    opacity: 0.8;
+}
+
+/* Measurement Elements */
+.measure-line {
+    stroke: var(--primary);
+    stroke-width: 2;
+    stroke-dasharray: 5, 5;
+    fill: none;
+}
+
+.measure-label {
+    background-color: var(--primary);
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+}
+
+.measurement-result {
+    position: absolute;
+    background-color: var(--primary);
+    color: white;
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--radius-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    box-shadow: var(--shadow-md);
+    z-index: var(--z-fixed);
+    white-space: nowrap;
+}
+
+/* Annotation Marker */
+.annotation-marker {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--gray-300);
+    color: var(--text-primary);
+    font-size: 0.75rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-sm);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    position: relative;
+}
+
+.annotation-delete-btn {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    width: 16px;
+    height: 16px;
+    background-color: var(--danger);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    border: none;
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+    z-index: 1;
+}
+
+/* Repositioning Controls */
+.edit-control-point {
+    width: 16px !important;
+    height: 16px !important;
+    border-radius: 50%;
+    background-color: white !important;
+    border: 3px solid var(--primary) !important;
+    cursor: move;
+    transition: transform var(--transition-fast), background-color var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.edit-control-point:hover {
+    transform: scale(1.5);
+    background-color: var(--primary-light) !important;
+}
+
+.control-point-label {
+    position: absolute;
+    background-color: var(--primary);
+    color: white;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: var(--z-tooltip);
+    transform: translate(-50%, -150%);
+}
+
+/* User Location Marker */
+.user-location-marker {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.location-accuracy-circle {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: rgba(33, 150, 243, 0.15);
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    animation: accuracy-pulse 3s infinite ease-out;
+}
+
+.location-marker-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 24px;
+    height: 24px;
+}
+
+.location-marker-svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0px 1px 2px rgba(0, 0, 0, 0.5));
+    transition: transform 0.15s ease;
+    transform-origin: center;
+}
+
+.location-pulse {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background-color: rgba(33, 150, 243, 0.4);
+    opacity: 0;
+    animation: location-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.location-pulse-inner {
+    position: absolute;
+    width: 80%;
+    height: 80%;
+    left: 10%;
+    top: 10%;
+    border-radius: 50%;
+    background-color: rgba(33, 150, 243, 0.6);
+    opacity: 0;
+    animation: location-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+    animation-delay: 0.5s;
+}
+
+.location-center {
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    left: 25%;
+    top: 25%;
+    border-radius: 50%;
+    background-color: rgb(33, 150, 243);
+    border: 2px solid white;
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+/* Location heading styles moved to location-marker.css to prevent conflicts */
+
+/* All location-heading styles have been moved to location-marker.css */
+
+/* Leaflet Custom Styles */
+.leaflet-control-layers {
+    border-radius: var(--radius-md) !important;
+    box-shadow: var(--shadow-md) !important;
+    z-index: var(--z-fixed) !important;
+    position: relative !important;
+}
+
+.leaflet-control-layers-toggle {
+    width: 36px !important;
+    height: 36px !important;
+}
+
+/* Control Point Styles */
+.edit-control-point {
+    width: 16px !important;
+    height: 16px !important;
+    border-radius: 50%;
+    background-color: white !important;
+    border: 3px solid var(--primary) !important;
+    cursor: move;
+    transition: transform var(--transition-fast), background-color var(--transition-fast);
+    box-shadow: var(--shadow-sm);
+}
+
+.edit-control-point:hover {
+    transform: scale(1.5);
+    background-color: var(--primary-light) !important;
+}
+
+.control-point-label {
+    position: absolute;
+    background-color: var(--primary);
+    color: white;
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+    font-size: 0.65rem;
+    font-weight: 600;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: var(--z-tooltip);
+    transform: translate(-50%, -150%);
+} 
